@@ -1,0 +1,17 @@
+// WebRTC-Release.xcconfig
+// Release configuration for WebRTC framework
+
+#include "WebRTC.xcconfig"
+
+// Release Settings
+DEBUG_INFORMATION_FORMAT = dwarf-with-dsym
+ENABLE_NS_ASSERTIONS = NO
+GCC_OPTIMIZATION_LEVEL = s
+MTL_ENABLE_DEBUG_INFO = NO
+SWIFT_COMPILATION_MODE = wholemodule
+SWIFT_OPTIMIZATION_LEVEL = -O
+VALIDATE_PRODUCT = YES
+
+// Additional Release Optimizations
+GCC_UNROLL_LOOPS = YES
+LLVM_LTO = YES_THIN

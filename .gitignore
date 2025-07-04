@@ -1,38 +1,95 @@
-# Build directories
+# Build directories and downloaded source
 /src/
 /depot_tools/
 /build/
-/output/
 /out/
 
-# macOS
+# WebRTC source code (massive download)
+/build/webrtc/
+/build/webrtc_src/
+
+# Build intermediates and object files
+/build/*/out/
+/build/*/obj/
+*.o
+*.a
+*.dylib
+
+# Build system files
+.gclient
+.gclient_entries
+.cipd/
+.gn/
+
+# Build logs
+/logs/
+*.log
+
+# Build output and artifacts
+/output/
+/release/
+
+# macOS system files
 .DS_Store
 .AppleDouble
 .LSOverride
+._*
+.Spotlight-V100
+.Trashes
 
 # Xcode
 *.xcuserstate
 *.xcworkspace/xcuserdata/
 *.xcodeproj/xcuserdata/
 DerivedData/
-
-# Build artifacts
-*.a
-*.o
-*.dylib
-*.framework
-*.xcframework
-*.zip
+*.xccheckout
+*.xcscmblueprint
 
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
+.Python
+env/
+venv/
 
-# Logs
-*.log
+# Editor files
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.sublime-*
 
 # Temporary files
 *.tmp
 *.temp
-.*.swp
+*.bak
+*.orig
+
+# Package manager
+node_modules/
+.npm/
+
+# Build cache
+.cache/
+.ninja_deps
+.ninja_log
+
+# Crash logs
+crash.log
+*.stackdump
+
+# Debug symbols
+*.dSYM/
+*.dSYM.zip
+
+# Code coverage
+*.gcov
+*.gcda
+*.gcno
+coverage/
+
+# Documentation build
+docs/_build/
+docs/.doctrees/

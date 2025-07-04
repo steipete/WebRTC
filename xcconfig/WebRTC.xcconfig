@@ -1,0 +1,41 @@
+// WebRTC.xcconfig
+// Configuration settings for WebRTC framework integration
+
+// Framework Search Paths
+FRAMEWORK_SEARCH_PATHS = $(inherited) $(PROJECT_DIR)/../WebRTC/output
+
+// Other Linker Flags - Required system frameworks and libraries
+OTHER_LDFLAGS = $(inherited) -framework WebRTC -framework AVFoundation -framework CoreMedia -framework CoreVideo -framework VideoToolbox -framework AudioToolbox -framework CoreAudio -framework CoreGraphics -framework OpenGL -framework Metal -framework MetalKit -lc++ -lm
+
+// Enable Modules
+CLANG_ENABLE_MODULES = YES
+
+// Swift Compiler - Search Paths
+SWIFT_INCLUDE_PATHS = $(inherited) $(PROJECT_DIR)/../WebRTC/output
+
+// Header Search Paths (if needed for Objective-C)
+HEADER_SEARCH_PATHS = $(inherited) $(PROJECT_DIR)/../WebRTC/output/WebRTC.xcframework/macos-arm64/WebRTC.framework/Headers
+
+// Architectures - Apple Silicon only
+ARCHS = arm64
+VALID_ARCHS = arm64
+
+// Deployment Target
+MACOSX_DEPLOYMENT_TARGET = 14.0
+
+// Code Signing
+CODE_SIGN_STYLE = Automatic
+
+// Strip Settings
+STRIP_INSTALLED_PRODUCT = YES
+STRIP_STYLE = non-global
+
+// C++ Settings
+CLANG_CXX_LANGUAGE_STANDARD = c++17
+CLANG_CXX_LIBRARY = libc++
+
+// Enable Bitcode (disabled for WebRTC)
+ENABLE_BITCODE = NO
+
+// Preprocessor Definitions
+GCC_PREPROCESSOR_DEFINITIONS = $(inherited) WEBRTC_MAC=1 WEBRTC_POSIX=1
