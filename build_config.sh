@@ -15,9 +15,9 @@ export ENABLE_AV1="${ENABLE_AV1:-true}"                # Enable AV1 codec
 # Audio Configuration
 export ENABLE_OPUS="${ENABLE_OPUS:-true}"              # Enable Opus audio codec
 export ENABLE_G711="${ENABLE_G711:-true}"              # Enable G.711 audio codec
-export ENABLE_G722="${ENABLE_G722:-true}"              # Enable G.722 audio codec
-export ENABLE_ILBC="${ENABLE_ILBC:-true}"              # Enable iLBC audio codec
-export ENABLE_ISAC="${ENABLE_ISAC:-true}"              # Enable iSAC audio codec
+export ENABLE_G722="${ENABLE_G722:-false}"             # Enable G.722 audio codec
+export ENABLE_ILBC="${ENABLE_ILBC:-false}"             # Enable iLBC audio codec
+export ENABLE_ISAC="${ENABLE_ISAC:-false}"             # Enable iSAC audio codec
 
 # Platform Configuration
 export BUILD_MAC="${BUILD_MAC:-true}"                  # Build for macOS
@@ -29,6 +29,10 @@ export BUILD_CATALYST="${BUILD_CATALYST:-false}"       # Build for Mac Catalyst
 export ENABLE_BITCODE="${ENABLE_BITCODE:-false}"       # Enable bitcode (iOS only)
 export STRIP_SYMBOLS="${STRIP_SYMBOLS:-true}"          # Strip debug symbols
 export ENABLE_ASSERTIONS="${ENABLE_ASSERTIONS:-false}" # Enable runtime assertions
+export ENABLE_LTO="${ENABLE_LTO:-true}"                # Enable Link-Time Optimization
+export ENABLE_THIN_LTO="${ENABLE_THIN_LTO:-true}"      # Use Thin LTO (faster than full LTO)
+export OPTIMIZE_FOR_SIZE="${OPTIMIZE_FOR_SIZE:-true}"  # Optimize for binary size
+export SYMBOL_LEVEL="${SYMBOL_LEVEL:-0}"               # Symbol level (0=none, 1=minimal, 2=full)
 
 # Feature Configuration
 export ENABLE_SIMULCAST="${ENABLE_SIMULCAST:-true}"    # Enable simulcast support
@@ -36,6 +40,11 @@ export ENABLE_PROTOBUF="${ENABLE_PROTOBUF:-false}"     # Enable protobuf (increa
 export ENABLE_SCTP="${ENABLE_SCTP:-true}"             # Enable SCTP for data channels
 export ENABLE_EXTERNAL_AUTH="${ENABLE_EXTERNAL_AUTH:-true}" # Enable external auth
 export ENABLE_METRICS="${ENABLE_METRICS:-true}"        # Enable metrics collection
+export ENABLE_TESTS="${ENABLE_TESTS:-false}"           # Build test binaries
+export ENABLE_EXAMPLES="${ENABLE_EXAMPLES:-false}"     # Build example programs
+export ENABLE_TOOLS="${ENABLE_TOOLS:-false}"           # Build WebRTC tools
+export USE_SYSTEM_SSL="${USE_SYSTEM_SSL:-true}"        # Use system SSL instead of BoringSSL
+export USE_SYSTEM_OPUS="${USE_SYSTEM_OPUS:-true}"      # Use system Opus (if available)
 
 # Build System Configuration
 export PARALLEL_JOBS="${PARALLEL_JOBS:-}"              # Number of parallel build jobs (empty = auto)

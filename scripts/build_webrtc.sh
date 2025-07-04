@@ -43,15 +43,87 @@ generate_gn_args() {
     args="$args target_cpu=\"$target_cpu\""
     args="$args is_debug=false"
     args="$args is_component_build=false"
-    args="$args rtc_include_tests=false"
-    args="$args rtc_enable_protobuf=false"
+    args="$args rtc_include_tests=$ENABLE_TESTS"
+    args="$args rtc_enable_protobuf=$ENABLE_PROTOBUF"
     args="$args rtc_include_pulse_audio=false"
-    args="$args rtc_build_examples=false"
-    args="$args rtc_build_tools=false"
+    args="$args rtc_build_examples=$ENABLE_EXAMPLES"
+    args="$args rtc_build_tools=$ENABLE_TOOLS"
     args="$args rtc_use_gtk=false"
     args="$args treat_warnings_as_errors=false"
     args="$args use_custom_libcxx=false"
     args="$args use_rtti=true"
+    
+    # Link-Time Optimization
+    if [ "$ENABLE_LTO" = "true" ]; then
+        args="$args use_lto=true"
+        if [ "$ENABLE_THIN_LTO" = "true" ]; then
+            args="$args use_thin_lto=true"
+        fi
+    fi
+    
+    # Size optimizations
+    if [ "$OPTIMIZE_FOR_SIZE" = "true" ]; then
+        args="$args optimize_for_size=true"
+    fi
+    
+    # Symbol stripping
+    args="$args symbol_level=$SYMBOL_LEVEL"
+    args="$args enable_stripping=true"
+    args="$args remove_webcore_debug_symbols=true"
+    
+    # Dead code elimination
+    args="$args enable_dead_code_stripping=true"
+    
+    # Disable legacy features
+    args="$args rtc_enable_legacy_api_video_quality_observer=false"
+    args="$args rtc_use_legacy_modules_directory=false"
+    
+    # Additional size optimizations
+    args="$args rtc_disable_trace_events=true"
+    args="$args rtc_exclude_transient_suppressor=true"
+    args="$args rtc_disable_metrics=true"
+    
+    # Use system libraries where possible
+    if [ "$USE_SYSTEM_SSL" = "true" ]; then
+        args="$args rtc_build_ssl=false"
+    fi
+    
+    if [ "$USE_SYSTEM_OPUS" = "true" ]; then
+        args="$args rtc_build_opus=false"
+        # Help WebRTC find system Opus on macOS
+        args="$args rtc_opus_dir=\"/opt/homebrew/opt/opus\""
+    fi
+    
+    # Compiler optimization flags for size
+    local cflags=""
+    local ldflags=""
+    
+    if [ "$USE_SYSTEM_OPUS" = "true" ]; then
+        cflags="$cflags -I/opt/homebrew/opt/opus/include"
+        ldflags="$ldflags -L/opt/homebrew/opt/opus/lib"
+    fi
+    
+    if [ "$OPTIMIZE_FOR_SIZE" = "true" ]; then
+        # Aggressive size optimization
+        cflags="$cflags -Os -ffunction-sections -fdata-sections"
+        ldflags="$ldflags -Wl,-dead_strip"  # macOS equivalent of --gc-sections
+    fi
+    
+    if [ -n "$cflags" ]; then
+        args="$args extra_cflags=\"$cflags\""
+    fi
+    
+    if [ -n "$ldflags" ]; then
+        args="$args extra_ldflags=\"$ldflags\""
+    fi
+    
+    # Disable unnecessary platform features
+    args="$args rtc_use_x11=false"
+    args="$args rtc_use_pipewire=false"
+    
+    # Use optimized build tools
+    args="$args use_clang_lld=true"
+    args="$args clang_use_chrome_plugins=false"
     
     # Codec support
     if [ "$ENABLE_H265" = "true" ]; then
@@ -77,6 +149,11 @@ generate_gn_args() {
     args="$args rtc_include_opus=$ENABLE_OPUS"
     args="$args rtc_include_ilbc=$ENABLE_ILBC"
     args="$args rtc_include_isac=$ENABLE_ISAC"
+    
+    # G.711 and G.722 codec control
+    if [ "$ENABLE_G711" = "false" ]; then
+        args="$args rtc_include_builtin_audio_codecs=false"
+    fi
     
     # Features
     args="$args rtc_enable_sctp=$ENABLE_SCTP"

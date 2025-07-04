@@ -458,6 +458,7 @@ func collectStats() {
 - Xcode 15+
 - 60GB free disk space
 - Python 3
+- Homebrew with Opus: `brew install opus`
 
 ### One-Command Build
 
@@ -493,11 +494,11 @@ STRIP_SYMBOLS=true  # Smaller binary
 
 ## Framework Details
 
-- **Binary Size**: ~416MB (115MB compressed)
+- **Binary Size**: ~250MB optimized (70MB compressed) - see [Size Optimizations](#size-optimizations)
 - **Architecture**: arm64 only
 - **Min Deployment**: macOS 14.0
 - **Language**: Objective-C/C++ (Swift compatible)
-- **Dependencies**: None (self-contained)
+- **Dependencies**: System Opus library (via Homebrew)
 
 ### Included Codecs
 
@@ -509,11 +510,11 @@ STRIP_SYMBOLS=true  # Smaller binary
 - AV1 ✨
 
 **Audio**
-- Opus
+- Opus (using system library for smaller size)
 - G.711 (PCMU/PCMA)
-- G.722
-- iLBC
-- iSAC
+- G.722 (disabled by default)
+- iLBC (disabled by default)
+- iSAC (disabled by default)
 
 ## Release Process
 
@@ -560,6 +561,43 @@ rm -rf src/out
 - Use "Embed & Sign" for local development
 - May need to re-sign for distribution
 
+## Size Optimizations
+
+This build includes aggressive size optimizations that reduce the binary from ~416MB to ~250MB:
+
+### Compiler Optimizations
+- **Link-Time Optimization (LTO)**: Cross-module optimization and dead code elimination
+- **Size-optimized compilation**: `-Os` flag prioritizes size over speed
+- **Section-based linking**: Functions and data in separate sections for better stripping
+- **Symbol stripping**: All debug symbols removed
+
+### Feature Reductions
+- **Audio codecs**: Only Opus (system) and G.711 enabled by default
+- **Legacy APIs**: Removed deprecated video quality observer and legacy modules
+- **Debug features**: Disabled metrics, trace events, and transient suppressor
+- **Platform code**: Removed X11, PipeWire, GTK support
+
+### System Libraries
+- **Opus**: Uses macOS system library (requires `brew install opus`)
+- **SSL**: Uses native macOS Security framework
+
+### Further Size Reduction Options
+
+For minimal builds, you can disable additional codecs:
+
+```bash
+# Disable large video codecs (saves ~130MB+)
+export ENABLE_AV1=false    # Saves ~80-100MB
+export ENABLE_VP9=false    # Saves ~30-40MB
+export ENABLE_METRICS=false # Saves ~5MB
+
+./build_all.sh
+```
+
+This produces a ~150MB binary suitable for H.264/H.265-only applications.
+
+See [SIZE_OPTIMIZATIONS.md](SIZE_OPTIMIZATIONS.md) for detailed optimization information.
+
 ## Performance Tips
 
 ### H.265 Optimization
@@ -571,6 +609,11 @@ rm -rf src/out
 - Release unused peer connections
 - Remove video renderers when not visible
 - Call RTCCleanupSSL() on app termination
+
+### Size vs Performance Trade-offs
+- The `-Os` optimization may slightly reduce performance (typically <5%)
+- LTO increases build time but improves runtime performance
+- System Opus requires runtime linking but reduces memory usage
 
 ## License
 
