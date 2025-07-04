@@ -18,8 +18,8 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "WebRTC",
-            url: "https://github.com/steipete/WebRTC/releases/download/M139/WebRTC.xcframework.zip",
-            checksum: "4feb66305109584230e99d4bf2f8c91401001fc34872695e2c7a70dcf5b63c40"
+            url: "https://github.com/steipete/WebRTC/releases/download/M139-dynamic/WebRTC-macOS-arm64-h265-dynamic.zip",
+            checksum: "c7f9bd55222116c3dd36772a367bef839545fbc1503c57d9d1fff67d697b090d"
         )
     ]
 )
