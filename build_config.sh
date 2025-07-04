@@ -8,13 +8,13 @@ export BUILD_TYPE="${BUILD_TYPE:-Release}"              # Release or Debug
 export ENABLE_DSYMS="${ENABLE_DSYMS:-false}"           # Generate dSYM files for debugging
 
 # Codec Configuration
-export ENABLE_H265="${ENABLE_H265:-false}"             # Enable H265/HEVC codec (disabled for size)
+export ENABLE_H265="${ENABLE_H265:-true}"              # Enable H265/HEVC codec
 export ENABLE_VP9="${ENABLE_VP9:-true}"                # Enable VP9 codec
 export ENABLE_AV1="${ENABLE_AV1:-false}"               # Enable AV1 codec (disabled for size)
 
 # Audio Configuration
 export ENABLE_OPUS="${ENABLE_OPUS:-true}"              # Enable Opus audio codec
-export ENABLE_G711="${ENABLE_G711:-true}"              # Enable G.711 audio codec
+export ENABLE_G711="${ENABLE_G711:-false}"             # Enable G.711 audio codec (disabled - Opus is enough)
 export ENABLE_G722="${ENABLE_G722:-false}"             # Enable G.722 audio codec
 export ENABLE_ILBC="${ENABLE_ILBC:-false}"             # Enable iLBC audio codec
 export ENABLE_ISAC="${ENABLE_ISAC:-false}"             # Enable iSAC audio codec

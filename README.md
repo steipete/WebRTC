@@ -478,14 +478,14 @@ This runs all steps automatically:
 Edit `build_config.sh` to customize:
 
 ```bash
-# Codecs
-ENABLE_H265=true    # H.265/HEVC
-ENABLE_VP9=true     # VP9
-ENABLE_AV1=true     # AV1
+# Video Codecs
+ENABLE_H265=true    # H.265/HEVC - Hardware accelerated
+ENABLE_VP9=true     # VP9 - Web compatibility
+ENABLE_AV1=false    # AV1 - Disabled by default (saves 100MB)
 
-# Audio
-ENABLE_OPUS=true    # Opus
-ENABLE_G711=true    # G.711
+# Audio Codecs
+ENABLE_OPUS=true    # Opus - Modern, efficient codec (only one needed)
+ENABLE_G711=false   # G.711 - Legacy telephony (disabled)
 
 # Build Options
 BUILD_TYPE=Release  # Release/Debug
@@ -507,14 +507,11 @@ STRIP_SYMBOLS=true  # Smaller binary
 - H.265/HEVC (hardware accelerated) ✨
 - VP8
 - VP9
-- AV1 ✨
+- AV1 (disabled by default - saves 100MB)
 
 **Audio**
-- Opus (using system library for smaller size)
-- G.711 (PCMU/PCMA)
-- G.722 (disabled by default)
-- iLBC (disabled by default)
-- iSAC (disabled by default)
+- Opus (using system library) - The only audio codec you need
+- Legacy codecs disabled: G.711, G.722, iLBC, iSAC
 
 ## Release Process
 
@@ -563,7 +560,7 @@ rm -rf src/out
 
 ## Size Optimizations
 
-This build includes aggressive size optimizations that reduce the binary from ~416MB to ~250MB:
+While the default build includes all codecs (~416MB), you can reduce the binary size with these optimizations:
 
 ### Compiler Optimizations
 - **Link-Time Optimization (LTO)**: Cross-module optimization and dead code elimination
@@ -576,7 +573,7 @@ This build includes aggressive size optimizations that reduce the binary from ~4
 - **ARC enabled**: `-fobjc-arc` for automatic reference counting
 
 ### Feature Reductions
-- **Audio codecs**: Only Opus (system) and G.711 enabled by default
+- **Audio codecs**: Only Opus (system library) enabled - it's all you need
 - **Legacy APIs**: Removed deprecated video quality observer and legacy modules
 - **Debug features**: Disabled metrics, trace events, BWE logging, and transient suppressor
 - **Platform code**: Removed X11, PipeWire, GTK support
@@ -597,15 +594,16 @@ This build includes aggressive size optimizations that reduce the binary from ~4
 For minimal builds, you can disable additional codecs:
 
 ```bash
-# Disable large video codecs (saves ~130MB+)
+# Disable large video codecs (saves ~160MB+)
 export ENABLE_AV1=false    # Saves ~80-100MB
+export ENABLE_H265=false   # Saves ~40-50MB  
 export ENABLE_VP9=false    # Saves ~30-40MB
 export ENABLE_METRICS=false # Saves ~5MB
 
 ./build_all.sh
 ```
 
-This produces a ~150MB binary suitable for H.264/H.265-only applications.
+This produces a ~250MB binary suitable for H.264/VP8-only applications.
 
 See [SIZE_OPTIMIZATIONS.md](SIZE_OPTIMIZATIONS.md) for detailed optimization information.
 
