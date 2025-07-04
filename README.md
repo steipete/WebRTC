@@ -17,7 +17,7 @@ Prebuilt WebRTC XCFramework for Apple Silicon Macs with H265/HEVC codec support.
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/steipete/WebRTC", from: "1.0.0")
+    .package(url: "https://github.com/steipete/WebRTC", from: "M139")
 ]
 ```
 
@@ -231,11 +231,10 @@ GitHub Actions automatically:
 # 2. Prepare release
 ./scripts/prepare_release.sh
 
-# 3. Tag and push
-git tag v1.0.0
-git push --tags
+# 3. Create GitHub release
+./scripts/create_release.sh
 
-# 4. Upload WebRTC.xcframework.zip to GitHub release
+# The release will be tagged with the current Chromium milestone (e.g., M139)
 ```
 
 ## Performance

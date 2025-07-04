@@ -147,6 +147,7 @@ echo "All builds completed!"
 # Save build info
 cat > "$BUILD_DIR/build_info.json" <<EOF
 {
+  "version": "M139",
   "webrtc_commit": "$(git rev-parse HEAD)",
   "webrtc_branch": "$(git branch -r --contains HEAD | grep -E 'branch-heads/[0-9]+' | head -1 | sed 's/.*branch-heads\///')",
   "build_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
