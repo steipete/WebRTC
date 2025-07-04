@@ -1,6 +1,6 @@
 # WebRTC XCFramework for macOS ARM64 with H265
 
-Prebuilt WebRTC XCFramework for Apple Silicon Macs with H265/HEVC codec support. Distributed as a Swift Package with binary target for easy integration.
+Prebuilt WebRTC XCFramework for Apple Silicon Macs with H265/HEVC and AV1 codec support. Distributed as a Swift Package with binary target for easy integration.
 
 ## Features
 
@@ -9,7 +9,6 @@ Prebuilt WebRTC XCFramework for Apple Silicon Macs with H265/HEVC codec support.
 - **📦 XCFramework**: Universal framework format
 - **🔧 Swift Package Manager**: Binary distribution ready
 - **⚙️ XCConfig Included**: Drop-in configuration files
-- **🤖 Automated Builds**: GitHub Actions CI/CD
 
 ## Quick Integration
 
@@ -25,12 +24,427 @@ dependencies: [
 
 1. File → Add Package Dependencies
 2. Enter: `https://github.com/steipete/WebRTC`
-3. Click "Add Package"
+3. Select version: "M139"
+4. Click "Add Package"
 
-### XCConfig Integration
+### Manual Framework Integration
 
-```xcconfig
-#include "Pods/WebRTC/xcconfig/WebRTC.xcconfig"
+1. Download `WebRTC.xcframework.zip` from [Releases](https://github.com/steipete/WebRTC/releases)
+2. Unzip and drag `WebRTC.xcframework` into your Xcode project
+3. In target settings, ensure "Embed & Sign" is selected
+4. Add required system frameworks in Build Phases → Link Binary:
+   - AVFoundation.framework
+   - CoreMedia.framework
+   - CoreVideo.framework
+   - VideoToolbox.framework
+   - AudioToolbox.framework
+   - CoreAudio.framework
+   - Network.framework
+
+## Usage Guide
+
+### Basic Setup
+
+```swift
+import WebRTC
+
+class WebRTCManager {
+    private var peerConnectionFactory: RTCPeerConnectionFactory!
+    private var peerConnection: RTCPeerConnection?
+    
+    init() {
+        // Initialize SSL (required once per app lifecycle)
+        RTCInitializeSSL()
+        
+        // Create peer connection factory
+        let videoEncoderFactory = RTCDefaultVideoEncoderFactory()
+        let videoDecoderFactory = RTCDefaultVideoDecoderFactory()
+        peerConnectionFactory = RTCPeerConnectionFactory(
+            encoderFactory: videoEncoderFactory,
+            decoderFactory: videoDecoderFactory
+        )
+    }
+    
+    deinit {
+        // Cleanup SSL
+        RTCCleanupSSL()
+    }
+}
+```
+
+### Creating a Peer Connection
+
+```swift
+func createPeerConnection() -> RTCPeerConnection? {
+    let config = RTCConfiguration()
+    
+    // Configure STUN/TURN servers
+    config.iceServers = [
+        RTCIceServer(urlStrings: ["stun:stun.l.google.com:19302"]),
+        RTCIceServer(
+            urlStrings: ["turn:your-turn-server.com:3478"],
+            username: "username",
+            credential: "password"
+        )
+    ]
+    
+    // Additional configuration
+    config.bundlePolicy = .maxBundle
+    config.rtcpMuxPolicy = .require
+    config.tcpCandidatePolicy = .disabled
+    config.candidateNetworkPolicy = .all
+    config.continualGatheringPolicy = .gatherContinually
+    
+    // Create constraints
+    let constraints = RTCMediaConstraints(
+        mandatoryConstraints: nil,
+        optionalConstraints: ["DtlsSrtpKeyAgreement": "true"]
+    )
+    
+    // Create peer connection
+    return peerConnectionFactory.peerConnection(
+        with: config,
+        constraints: constraints,
+        delegate: self
+    )
+}
+```
+
+### Camera Capture with H265
+
+```swift
+class CameraCapture {
+    private var videoCapturer: RTCCameraVideoCapturer?
+    private var videoSource: RTCVideoSource?
+    private var localVideoTrack: RTCVideoTrack?
+    
+    func setupCamera(factory: RTCPeerConnectionFactory) {
+        // Create video source and track
+        videoSource = factory.videoSource()
+        localVideoTrack = factory.videoTrack(with: videoSource!, trackId: "video0")
+        
+        // Create camera capturer
+        videoCapturer = RTCCameraVideoCapturer(delegate: videoSource!)
+        
+        // Start capture
+        startCapture()
+    }
+    
+    func startCapture() {
+        guard let capturer = videoCapturer,
+              let camera = RTCCameraVideoCapturer.captureDevices().first else { return }
+        
+        // Find best format (prefer 1080p)
+        let formats = RTCCameraVideoCapturer.supportedFormats(for: camera)
+        let targetWidth = 1920
+        let targetHeight = 1080
+        
+        var selectedFormat: AVCaptureDevice.Format?
+        var currentDiff = Int.max
+        
+        for format in formats {
+            let dimension = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
+            let diff = abs(targetWidth - Int(dimension.width)) + abs(targetHeight - Int(dimension.height))
+            if diff < currentDiff {
+                selectedFormat = format
+                currentDiff = diff
+            }
+        }
+        
+        guard let format = selectedFormat else { return }
+        
+        // Get suitable fps
+        let fps = self.getMaxSupportedFramerate(for: format)
+        
+        // Start capture
+        capturer.startCapture(with: camera, format: format, fps: fps)
+    }
+    
+    private func getMaxSupportedFramerate(for format: AVCaptureDevice.Format) -> Int {
+        var maxFramerate = 0.0
+        for range in format.videoSupportedFrameRateRanges {
+            maxFramerate = max(maxFramerate, range.maxFrameRate)
+        }
+        return min(Int(maxFramerate), 30) // Cap at 30fps for performance
+    }
+}
+```
+
+### Screen Sharing
+
+```swift
+class ScreenShare {
+    private var screenSource: RTCVideoSource?
+    private var screenTrack: RTCVideoTrack?
+    private var screenCapturer: RTCVideoCapturer?
+    
+    func setupScreenShare(factory: RTCPeerConnectionFactory) {
+        // Create screen source
+        screenSource = factory.videoSource()
+        screenTrack = factory.videoTrack(with: screenSource!, trackId: "screen0")
+        
+        // Create custom screen capturer
+        screenCapturer = RTCVideoCapturer(delegate: screenSource!)
+        
+        // Start screen capture
+        startScreenCapture()
+    }
+    
+    func startScreenCapture() {
+        // Request screen recording permission
+        CGRequestScreenCaptureAccess()
+        
+        // Capture main display
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            self?.captureScreen()
+        }
+    }
+    
+    private func captureScreen() {
+        let displayID = CGMainDisplayID()
+        let displayBounds = CGDisplayBounds(displayID)
+        
+        // Create display stream
+        var displayStreamConfig = CGDisplayStreamConfiguration()
+        
+        let displayStream = CGDisplayStreamCreate(
+            displayID,
+            Int(displayBounds.width),
+            Int(displayBounds.height),
+            Int32(kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange),
+            nil,
+            CGDisplayStreamFrameAvailableHandler { status, displayTime, frameSurface, updateRef in
+                // Convert IOSurface to CVPixelBuffer and send to WebRTC
+                // Implementation depends on your specific needs
+            }
+        )
+        
+        if let stream = displayStream {
+            CGDisplayStreamStart(stream)
+        }
+    }
+}
+```
+
+### Configuring H265/HEVC Codec
+
+```swift
+func preferH265Codec(factory: RTCPeerConnectionFactory) -> RTCRtpTransceiverInit {
+    let transceiverInit = RTCRtpTransceiverInit()
+    transceiverInit.direction = .sendRecv
+    
+    // Get available codecs
+    let videoCodecs = RTCDefaultVideoEncoderFactory.supportedCodecs()
+    
+    // Find H265 codec
+    let h265Codec = videoCodecs.first { $0.name == kRTCVideoCodecH265Name }
+    
+    // Set codec preferences with H265 first
+    if let h265 = h265Codec {
+        transceiverInit.sendEncodings = [
+            RTCRtpEncodingParameters(rid: "h").apply {
+                $0.isActive = true
+                $0.maxBitrateBps = NSNumber(value: 2_000_000) // 2 Mbps for high quality
+                $0.maxFramerate = NSNumber(value: 30)
+                $0.scaleResolutionDownBy = NSNumber(value: 1.0)
+            }
+        ]
+    }
+    
+    return transceiverInit
+}
+
+// Extension helper
+extension NSObject {
+    func apply(_ block: (Self) -> Void) -> Self {
+        block(self)
+        return self
+    }
+}
+```
+
+### Audio Configuration
+
+```swift
+func setupAudio(factory: RTCPeerConnectionFactory) -> RTCMediaStreamTrack? {
+    // Configure audio session
+    let audioSession = RTCAudioSession.sharedInstance()
+    audioSession.lockForConfiguration()
+    do {
+        try audioSession.setCategory(AVAudioSession.Category.playAndRecord.rawValue)
+        try audioSession.setMode(AVAudioSession.Mode.voiceChat.rawValue)
+        try audioSession.setActive(true)
+    } catch {
+        print("Failed to configure audio session: \(error)")
+    }
+    audioSession.unlockForConfiguration()
+    
+    // Create audio source and track
+    let audioSource = factory.audioSource(with: nil)
+    let audioTrack = factory.audioTrack(with: audioSource, trackId: "audio0")
+    
+    return audioTrack
+}
+```
+
+### Handling Peer Connection Events
+
+```swift
+extension WebRTCManager: RTCPeerConnectionDelegate {
+    func peerConnection(_ peerConnection: RTCPeerConnection, didChange stateChanged: RTCSignalingState) {
+        print("Signaling state: \(stateChanged)")
+    }
+    
+    func peerConnection(_ peerConnection: RTCPeerConnection, didAdd stream: RTCMediaStream) {
+        print("Stream added with \(stream.videoTracks.count) video tracks")
+        
+        if let videoTrack = stream.videoTracks.first {
+            // Attach to video renderer (e.g., RTCMTLVideoView)
+            DispatchQueue.main.async {
+                self.remoteVideoTrack = videoTrack
+                videoTrack.add(self.remoteVideoView)
+            }
+        }
+    }
+    
+    func peerConnection(_ peerConnection: RTCPeerConnection, didChange newState: RTCIceConnectionState) {
+        switch newState {
+        case .connected:
+            print("ICE connected")
+        case .disconnected:
+            print("ICE disconnected")
+        case .failed:
+            print("ICE failed")
+        default:
+            break
+        }
+    }
+    
+    func peerConnection(_ peerConnection: RTCPeerConnection, didGenerate candidate: RTCIceCandidate) {
+        // Send candidate to remote peer via signaling
+        let candidateData = [
+            "candidate": candidate.sdp,
+            "sdpMLineIndex": candidate.sdpMLineIndex,
+            "sdpMid": candidate.sdpMid ?? ""
+        ] as [String : Any]
+        
+        // Send via your signaling channel
+    }
+}
+```
+
+### Video Rendering with Metal
+
+```swift
+import MetalKit
+
+class VideoViewController: NSViewController {
+    @IBOutlet weak var localVideoView: RTCMTLVideoView!
+    @IBOutlet weak var remoteVideoView: RTCMTLVideoView!
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        // Configure video views
+        localVideoView.videoContentMode = .scaleAspectFill
+        remoteVideoView.videoContentMode = .scaleAspectFill
+        
+        // Enable video tracks
+        if let localTrack = webRTCManager.localVideoTrack {
+            localTrack.add(localVideoView)
+        }
+    }
+}
+```
+
+### Creating and Handling Offers/Answers
+
+```swift
+func createOffer() {
+    let constraints = RTCMediaConstraints(
+        mandatoryConstraints: [
+            "OfferToReceiveVideo": "true",
+            "OfferToReceiveAudio": "true"
+        ],
+        optionalConstraints: nil
+    )
+    
+    peerConnection?.offer(for: constraints) { [weak self] sdp, error in
+        guard let self = self, let sdp = sdp else {
+            print("Failed to create offer: \(error?.localizedDescription ?? "Unknown error")")
+            return
+        }
+        
+        // Set local description
+        self.peerConnection?.setLocalDescription(sdp) { error in
+            if let error = error {
+                print("Failed to set local description: \(error.localizedDescription)")
+                return
+            }
+            
+            // Send offer to remote peer via signaling
+            self.sendOffer(sdp)
+        }
+    }
+}
+
+func handleAnswer(_ answerSDP: String) {
+    let sessionDescription = RTCSessionDescription(type: .answer, sdp: answerSDP)
+    
+    peerConnection?.setRemoteDescription(sessionDescription) { error in
+        if let error = error {
+            print("Failed to set remote description: \(error.localizedDescription)")
+        }
+    }
+}
+```
+
+### Data Channel
+
+```swift
+func createDataChannel() -> RTCDataChannel? {
+    let config = RTCDataChannelConfiguration()
+    config.isOrdered = true
+    config.isNegotiated = false
+    
+    let dataChannel = peerConnection?.dataChannel(forLabel: "data", configuration: config)
+    dataChannel?.delegate = self
+    
+    return dataChannel
+}
+
+// RTCDataChannelDelegate
+extension WebRTCManager: RTCDataChannelDelegate {
+    func dataChannelDidChangeState(_ dataChannel: RTCDataChannel) {
+        print("Data channel state: \(dataChannel.readyState)")
+    }
+    
+    func dataChannel(_ dataChannel: RTCDataChannel, didReceiveMessageWith buffer: RTCDataBuffer) {
+        if buffer.isBinary {
+            let data = buffer.data
+            // Handle binary data
+        } else {
+            let text = String(data: buffer.data, encoding: .utf8)
+            // Handle text message
+        }
+    }
+}
+```
+
+### Stats Collection
+
+```swift
+func collectStats() {
+    peerConnection?.statistics { stats in
+        for stat in stats {
+            if stat.type == "outbound-rtp" && stat.values["mediaType"] as? String == "video" {
+                let bitrate = stat.values["bytesSent"] as? Int ?? 0
+                let packets = stat.values["packetsSent"] as? Int ?? 0
+                print("Video bitrate: \(bitrate / 1000) kbps, packets: \(packets)")
+            }
+        }
+    }
+}
 ```
 
 ## Building from Source
@@ -52,30 +466,11 @@ dependencies: [
 This runs all steps automatically:
 1. Sets up Google depot_tools
 2. Fetches WebRTC source (~20GB)
-3. Builds with H265 enabled
+3. Builds with H265 and AV1 enabled
 4. Creates XCFramework
 5. Prepares for distribution
 
-### Manual Build Steps
-
-```bash
-# 1. Setup build tools
-./scripts/setup_depot_tools.sh
-
-# 2. Fetch WebRTC source
-./scripts/fetch_webrtc.sh
-
-# 3. Build WebRTC
-./scripts/build_webrtc.sh
-
-# 4. Package framework
-./scripts/package_framework.sh
-
-# 5. Prepare release
-./scripts/prepare_release.sh
-```
-
-## Configuration
+### Configuration
 
 Edit `build_config.sh` to customize:
 
@@ -93,65 +488,6 @@ ENABLE_G711=true    # G.711
 BUILD_TYPE=Release  # Release/Debug
 STRIP_SYMBOLS=true  # Smaller binary
 ```
-
-## Usage Example
-
-```swift
-import WebRTC
-
-// Initialize
-RTCInitializeSSL()
-
-// Create factory
-let factory = RTCPeerConnectionFactory()
-
-// Configure connection
-let config = RTCConfiguration()
-config.iceServers = [RTCIceServer(urlStrings: ["stun:stun.l.google.com:19302"])]
-
-// Create peer connection
-let peerConnection = factory.peerConnection(with: config, 
-                                           constraints: RTCMediaConstraints(),
-                                           delegate: self)
-
-// Video with H265
-let videoSource = factory.videoSource()
-let videoTrack = factory.videoTrack(with: videoSource, trackId: "video0")
-
-// Configure H265 codec
-let h265Codec = RTCVideoCodecInfo(name: kRTCVideoCodecH265Name)
-let encoderFactory = RTCDefaultVideoEncoderFactory()
-factory.setVideoEncoderFactory(encoderFactory)
-```
-
-## Output Structure
-
-```
-output/
-├── WebRTC.xcframework/          # Universal framework
-│   ├── Info.plist
-│   └── macos-arm64/
-│       └── WebRTC.framework/
-│           ├── WebRTC           # 416MB binary
-│           ├── Headers/         # Public headers
-│           └── Modules/         # Module map
-└── WebRTC-macOS-arm64-h265.zip # Compressed (115MB)
-```
-
-## XCConfig Files
-
-Included configuration files for easy project integration:
-
-- `xcconfig/WebRTC.xcconfig` - Base configuration
-- `xcconfig/WebRTC-Debug.xcconfig` - Debug settings
-- `xcconfig/WebRTC-Release.xcconfig` - Release settings
-
-### Using XCConfig
-
-1. Copy `xcconfig` folder to your project
-2. In Xcode project settings:
-   - Debug: Select `WebRTC-Debug.xcconfig`
-   - Release: Select `WebRTC-Release.xcconfig`
 
 ## Framework Details
 
@@ -177,50 +513,7 @@ Included configuration files for easy project integration:
 - iLBC
 - iSAC
 
-## Troubleshooting
-
-### Build Issues
-
-**Missing depot_tools**
-```bash
-export PATH="$PWD/depot_tools:$PATH"
-```
-
-**Out of space**
-```bash
-# Clean build artifacts
-rm -rf src/src/out
-```
-
-**Xcode version**
-```bash
-sudo xcode-select -s /Applications/Xcode.app
-```
-
-### Integration Issues
-
-**Framework not found**
-- Ensure "Embed & Sign" is selected
-- Check Framework Search Paths
-
-**Missing symbols**
-- Link required system frameworks:
-  - AVFoundation
-  - CoreMedia
-  - VideoToolbox
-  - AudioToolbox
-
-**Code signing**
-- Use "Embed & Sign" for local development
-- May need to re-sign for distribution
-
-## CI/CD
-
-GitHub Actions automatically:
-- Builds weekly (Mondays)
-- Creates releases
-- Calculates checksums
-- Updates Package.swift
+## Release Process
 
 ### Manual Release
 
@@ -237,26 +530,45 @@ GitHub Actions automatically:
 # The release will be tagged with the current Chromium milestone (e.g., M139)
 ```
 
-## Performance
+## Troubleshooting
 
-### H.265 Benefits
-- 40-50% bandwidth reduction vs H.264
-- Better quality at same bitrate
-- Hardware encoding/decoding on Apple Silicon
-- Lower CPU usage
+### Build Issues
 
-### Build Performance
-- Full build: 1-3 hours
-- Incremental: 10-30 minutes
-- Peak RAM: ~6GB
-- CPU: Uses all cores
+**Missing depot_tools**
+```bash
+export PATH="$PWD/depot_tools:$PATH"
+```
 
-## Security
+**Out of space**
+```bash
+# Clean build artifacts
+rm -rf src/out
+```
 
-- Official WebRTC source only
-- No modifications to security code
-- Regular updates via CI/CD
-- Code signed frameworks
+### Integration Issues
+
+**Framework not found**
+- Ensure "Embed & Sign" is selected
+- Check Framework Search Paths
+
+**Missing symbols**
+- Link required system frameworks (see Manual Framework Integration)
+
+**Code signing**
+- Use "Embed & Sign" for local development
+- May need to re-sign for distribution
+
+## Performance Tips
+
+### H.265 Optimization
+- Use hardware encoding when available
+- Set appropriate bitrate limits (1-4 Mbps for 1080p)
+- Monitor CPU usage with Activity Monitor
+
+### Memory Management
+- Release unused peer connections
+- Remove video renderers when not visible
+- Call RTCCleanupSSL() on app termination
 
 ## License
 
