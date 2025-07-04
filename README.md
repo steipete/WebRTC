@@ -2,6 +2,8 @@
 
 Prebuilt WebRTC XCFramework for Apple Silicon Macs with H265/HEVC and AV1 codec support. Distributed as a Swift Package with binary target for easy integration.
 
+> **Version Note**: This release (M139) is built from WebRTC's main branch, providing the latest features and codec improvements. For production use, consider building from a stable milestone branch. See [VERSIONING.md](VERSIONING.md) for details.
+
 ## Features
 
 - **🎯 H265/HEVC & AV1**: Next-gen video codecs with hardware acceleration
