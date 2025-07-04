@@ -1,0 +1,38 @@
+# Build directories
+/src/
+/depot_tools/
+/build/
+/output/
+/out/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Xcode
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+DerivedData/
+
+# Build artifacts
+*.a
+*.o
+*.dylib
+*.framework
+*.xcframework
+*.zip
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+.*.swp

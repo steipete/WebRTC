@@ -1,0 +1,140 @@
+name: Build WebRTC Framework
+
+on:
+  workflow_dispatch:
+    inputs:
+      webrtc_branch:
+        description: 'WebRTC branch to build (e.g., 5845)'
+        required: false
+        default: 'main'
+      enable_h265:
+        description: 'Enable H265 codec'
+        required: false
+        default: 'true'
+        type: boolean
+  
+  schedule:
+    # Run weekly on Sundays at 00:00 UTC
+    - cron: '0 0 * * 0'
+  
+  push:
+    branches:
+      - main
+    paths:
+      - 'scripts/**'
+      - '.github/workflows/build-webrtc.yml'
+
+env:
+  MACOS_VERSION: '14'  # macOS Sonoma for ARM64 support
+
+jobs:
+  build:
+    name: Build WebRTC for macOS ARM64
+    runs-on: macos-14  # ARM64 runner
+    timeout-minutes: 360  # 6 hours max
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup build environment
+        run: |
+          # Install required tools
+          brew install ninja
+          
+          # Set up Python 3
+          brew install python@3.11
+          
+          # Verify Xcode
+          sudo xcode-select -p
+          xcodebuild -version
+      
+      - name: Cache depot_tools
+        uses: actions/cache@v4
+        with:
+          path: depot_tools
+          key: depot-tools-${{ runner.os }}-${{ hashFiles('scripts/setup_depot_tools.sh') }}
+      
+      - name: Setup depot_tools
+        run: |
+          chmod +x scripts/setup_depot_tools.sh
+          ./scripts/setup_depot_tools.sh
+      
+      - name: Cache WebRTC source
+        uses: actions/cache@v4
+        with:
+          path: src
+          key: webrtc-src-${{ github.event.inputs.webrtc_branch }}-${{ hashFiles('scripts/fetch_webrtc.sh') }}
+          restore-keys: |
+            webrtc-src-${{ github.event.inputs.webrtc_branch }}-
+            webrtc-src-
+      
+      - name: Fetch WebRTC source
+        run: |
+          chmod +x scripts/fetch_webrtc.sh
+          ./scripts/fetch_webrtc.sh
+          
+          # Checkout specific branch if provided
+          if [ "${{ github.event.inputs.webrtc_branch }}" != "" ] && [ "${{ github.event.inputs.webrtc_branch }}" != "main" ]; then
+            cd src/src
+            git checkout branch-heads/${{ github.event.inputs.webrtc_branch }}
+            cd ../..
+            export PATH="$PWD/depot_tools:$PATH"
+            cd src
+            gclient sync --with_branch_heads --with_tags
+          fi
+      
+      - name: Get WebRTC version info
+        id: version
+        run: |
+          cd src/src
+          COMMIT=$(git rev-parse --short HEAD)
+          BRANCH=$(git branch -r --contains HEAD | grep -E 'branch-heads/[0-9]+' | head -1 | sed 's/.*branch-heads\///' || echo "main")
+          echo "commit=$COMMIT" >> $GITHUB_OUTPUT
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+          echo "WebRTC Commit: $COMMIT"
+          echo "WebRTC Branch: $BRANCH"
+      
+      - name: Build WebRTC
+        run: |
+          chmod +x scripts/build_webrtc.sh
+          export ENABLE_H265=${{ github.event.inputs.enable_h265 }}
+          ./scripts/build_webrtc.sh
+      
+      - name: Package framework
+        run: |
+          chmod +x scripts/package_framework.sh
+          ./scripts/package_framework.sh
+      
+      - name: Upload framework artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WebRTC-macOS-arm64-${{ steps.version.outputs.branch }}-${{ steps.version.outputs.commit }}
+          path: output/WebRTC-macOS-arm64-h265.zip
+      
+      - name: Create release
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: webrtc-${{ steps.version.outputs.branch }}-${{ steps.version.outputs.commit }}
+          name: WebRTC ${{ steps.version.outputs.branch }} (${{ steps.version.outputs.commit }})
+          body: |
+            WebRTC Framework for macOS ARM64
+            
+            - **WebRTC Branch**: ${{ steps.version.outputs.branch }}
+            - **WebRTC Commit**: ${{ steps.version.outputs.commit }}
+            - **H265 Support**: ${{ github.event.inputs.enable_h265 }}
+            - **Build Date**: ${{ github.run_started_at }}
+            
+            ## Installation
+            
+            ### Swift Package Manager
+            ```swift
+            .package(url: "https://github.com/${{ github.repository }}", from: "${{ steps.version.outputs.branch }}")
+            ```
+            
+            ### Direct Download
+            Download and extract the XCFramework from the assets below.
+          files: output/WebRTC-macOS-arm64-h265.zip
+          draft: false
+          prerelease: false
