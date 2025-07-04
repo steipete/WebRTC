@@ -67,6 +67,12 @@ generate_gn_args() {
         args="$args rtc_libvpx_build_vp9=false"
     fi
     
+    # AV1 codec
+    if [ "$ENABLE_AV1" = "true" ]; then
+        args="$args rtc_use_libaom_av1_decoder=true"
+        args="$args rtc_use_libaom_av1_encoder=true"
+    fi
+    
     # Audio codecs
     args="$args rtc_include_opus=$ENABLE_OPUS"
     args="$args rtc_include_ilbc=$ENABLE_ILBC"

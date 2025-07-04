@@ -4,7 +4,7 @@ Prebuilt WebRTC XCFramework for Apple Silicon Macs with H265/HEVC codec support.
 
 ## Features
 
-- **🎯 H265/HEVC Support**: Hardware-accelerated H265 encoding/decoding
+- **🎯 H265/HEVC & AV1**: Next-gen video codecs with hardware acceleration
 - **🚀 Apple Silicon Native**: Optimized for ARM64 (M1/M2/M3)
 - **📦 XCFramework**: Universal framework format
 - **🔧 Swift Package Manager**: Binary distribution ready
@@ -83,7 +83,7 @@ Edit `build_config.sh` to customize:
 # Codecs
 ENABLE_H265=true    # H.265/HEVC
 ENABLE_VP9=true     # VP9
-ENABLE_AV1=false    # AV1 (experimental)
+ENABLE_AV1=true     # AV1
 
 # Audio
 ENABLE_OPUS=true    # Opus
@@ -168,6 +168,7 @@ Included configuration files for easy project integration:
 - H.265/HEVC (hardware accelerated) ✨
 - VP8
 - VP9
+- AV1 ✨
 
 **Audio**
 - Opus

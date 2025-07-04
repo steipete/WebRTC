@@ -21,6 +21,8 @@ for codec in encoderFactory.supportedCodecs() {
     print("  - \(codec.name)")
     if codec.name == kRTCVideoCodecH265Name {
         print("    ✓ H265/HEVC encoding supported!")
+    } else if codec.name == kRTCVideoCodecAv1Name {
+        print("    ✓ AV1 encoding supported!")
     }
 }
 
@@ -29,6 +31,8 @@ for codec in decoderFactory.supportedCodecs() {
     print("  - \(codec.name)")
     if codec.name == kRTCVideoCodecH265Name {
         print("    ✓ H265/HEVC decoding supported!")
+    } else if codec.name == kRTCVideoCodecAv1Name {
+        print("    ✓ AV1 decoding supported!")
     }
 }
 

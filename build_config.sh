@@ -10,7 +10,7 @@ export ENABLE_DSYMS="${ENABLE_DSYMS:-false}"           # Generate dSYM files for
 # Codec Configuration
 export ENABLE_H265="${ENABLE_H265:-true}"              # Enable H265/HEVC codec
 export ENABLE_VP9="${ENABLE_VP9:-true}"                # Enable VP9 codec
-export ENABLE_AV1="${ENABLE_AV1:-false}"               # Enable AV1 codec (experimental)
+export ENABLE_AV1="${ENABLE_AV1:-true}"                # Enable AV1 codec
 
 # Audio Configuration
 export ENABLE_OPUS="${ENABLE_OPUS:-true}"              # Enable Opus audio codec
