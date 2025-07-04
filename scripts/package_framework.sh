@@ -30,7 +30,7 @@ create_framework() {
     local arch=$2
     local build_dir=$3
     local framework_name="WebRTC"
-    local framework_dir="$OUTPUT_DIR/${framework_name}_${platform}_${arch}.framework"
+    local framework_dir="$OUTPUT_DIR/${framework_name}.framework"
     
     echo "Creating framework for $platform ($arch)..."
     
@@ -55,8 +55,26 @@ create_framework() {
     # Find and include all necessary static libraries
     find "$build_dir/obj" -name "*.a" -type f > "$OUTPUT_DIR/all_libs.txt"
     
-    # Create a single library
-    libtool -static -o "$framework_dir/$framework_name" "${libs[@]}" 2>/dev/null || true
+    # Use the main WebRTC library that was built
+    echo "Creating framework library..."
+    
+    # Check for the main WebRTC library
+    webrtc_lib="$build_dir/obj/libwebrtc.a"
+    
+    if [ ! -f "$webrtc_lib" ]; then
+        echo "Error: WebRTC library not found at $webrtc_lib"
+        exit 1
+    fi
+    
+    echo "Using WebRTC library: $(ls -lh "$webrtc_lib" | awk '{print $5}')"
+    
+    # Copy the library to the framework
+    cp "$webrtc_lib" "$framework_dir/$framework_name"
+    
+    if [ ! -f "$framework_dir/$framework_name" ]; then
+        echo "Error: Failed to copy library to framework"
+        exit 1
+    fi
     
     # Copy headers
     echo "Copying headers..."
@@ -209,7 +227,7 @@ create_framework "mac" "arm64" "$WEBRTC_SRC/out/mac_arm64"
 # Create XCFramework
 echo "Creating XCFramework..."
 xcodebuild -create-xcframework \
-    -framework "$OUTPUT_DIR/WebRTC_mac_arm64.framework" \
+    -framework "$OUTPUT_DIR/WebRTC.framework" \
     -output "$OUTPUT_DIR/WebRTC.xcframework"
 
 echo "XCFramework created: $OUTPUT_DIR/WebRTC.xcframework"

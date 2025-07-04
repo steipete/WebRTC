@@ -12,11 +12,15 @@ SRC_DIR="$PROJECT_ROOT/src"
 WEBRTC_SRC="$SRC_DIR/src"
 BUILD_DIR="$PROJECT_ROOT/build"
 
-# Build configuration
-BUILD_TYPE="${BUILD_TYPE:-Release}"
-ENABLE_H265="${ENABLE_H265:-true}"
-ENABLE_DSYMS="${ENABLE_DSYMS:-false}"
-BITCODE="${BITCODE:-false}"
+# Load build configuration
+if [ -f "$PROJECT_ROOT/build_config.sh" ]; then
+    source "$PROJECT_ROOT/build_config.sh"
+fi
+
+# Show configuration if verbose
+if [ "$VERBOSE_BUILD" = "true" ]; then
+    print_config
+fi
 
 # Ensure depot_tools is in PATH
 export PATH="$DEPOT_TOOLS_DIR:$PATH"
@@ -49,11 +53,32 @@ generate_gn_args() {
     args="$args use_custom_libcxx=false"
     args="$args use_rtti=true"
     
-    # H265 codec support
+    # Codec support
     if [ "$ENABLE_H265" = "true" ]; then
         args="$args rtc_use_h265=true"
         args="$args ffmpeg_branding=\"Chrome\""
         args="$args proprietary_codecs=true"
+    fi
+    
+    # VP9 codec
+    if [ "$ENABLE_VP9" = "true" ]; then
+        args="$args rtc_libvpx_build_vp9=true"
+    else
+        args="$args rtc_libvpx_build_vp9=false"
+    fi
+    
+    # Audio codecs
+    args="$args rtc_include_opus=$ENABLE_OPUS"
+    args="$args rtc_include_ilbc=$ENABLE_ILBC"
+    args="$args rtc_include_isac=$ENABLE_ISAC"
+    
+    # Features
+    args="$args rtc_enable_sctp=$ENABLE_SCTP"
+    args="$args rtc_enable_external_auth=$ENABLE_EXTERNAL_AUTH"
+    
+    # Optimizations
+    if [ "$STRIP_SYMBOLS" = "true" ]; then
+        args="$args strip_debug_info=true"
     fi
     
     # macOS specific settings
@@ -89,8 +114,8 @@ build_webrtc() {
     # Create output directory and write args
     gn gen "$out_dir" --args="$gn_args"
     
-    # Build
-    ninja -C "$out_dir" rtc_base frame_objc videocapture_objc base_objc sdk
+    # Build - use default target which builds everything needed
+    ninja -C "$out_dir"
     
     echo "Build complete for $platform ($arch)"
 }
