@@ -83,6 +83,14 @@ generate_gn_args() {
     args="$args rtc_exclude_transient_suppressor=true"
     args="$args rtc_disable_metrics=true"
     
+    # More aggressive feature disables
+    args="$args rtc_enable_bwe_test_logging=false"
+    args="$args rtc_include_dav1d_in_internal_decoder_factory=false"
+    args="$args rtc_use_h265=true"  # Ensure H.265 is enabled
+    args="$args rtc_include_internal_audio_device=false"  # Use macOS audio system
+    args="$args rtc_enable_protobuf=false"  # Disable protobuf if not using data channels
+    args="$args rtc_builtin_task_queue_impl=false"  # Use system GCD instead
+    
     # Use system libraries where possible
     if [ "$USE_SYSTEM_SSL" = "true" ]; then
         args="$args rtc_build_ssl=false"
@@ -106,7 +114,25 @@ generate_gn_args() {
     if [ "$OPTIMIZE_FOR_SIZE" = "true" ]; then
         # Aggressive size optimization
         cflags="$cflags -Os -ffunction-sections -fdata-sections"
+        
+        # Apple Silicon specific optimization
+        if [[ $(uname -m) == "arm64" ]]; then
+            cflags="$cflags -mcpu=apple-m1"
+        fi
+        
+        # Enable clang modules for faster builds
+        cflags="$cflags -fmodules -fcxx-modules"
+        
+        # Deployment target optimization
+        cflags="$cflags -mmacosx-version-min=14.0"
+        
+        # Objective-C ARC
+        cflags="$cflags -fobjc-arc"
+        
+        # macOS linker flags
         ldflags="$ldflags -Wl,-dead_strip"  # macOS equivalent of --gc-sections
+        ldflags="$ldflags -Wl,-x"  # Strip local symbols
+        ldflags="$ldflags -Wl,-S"  # Strip debug symbols
     fi
     
     if [ -n "$cflags" ]; then
@@ -168,6 +194,16 @@ generate_gn_args() {
     if [ "$target_os" = "mac" ]; then
         args="$args mac_deployment_target=\"14.0\""
         args="$args enable_dsyms=$ENABLE_DSYMS"
+        
+        # Use macOS system frameworks
+        args="$args rtc_use_metal_rendering=true"  # Use Metal for rendering
+        args="$args rtc_use_accelerate_framework=true"  # Use Accelerate for SIMD
+        
+        # Enable hardware video encoding/decoding
+        args="$args rtc_use_videotoolbox=true"
+        
+        # Module support for faster builds
+        args="$args enable_modules=true"
     fi
     
     # iOS specific settings

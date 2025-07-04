@@ -13,7 +13,7 @@ BUILD_DIR="$PROJECT_ROOT/build"
 OUTPUT_DIR="$PROJECT_ROOT/output"
 
 # Check if build exists
-if [ ! -d "$WEBRTC_SRC/out/mac_arm64" ]; then
+if [ ! -d "$WEBRTC_SRC/out/Default" ]; then
     echo "Error: WebRTC build not found. Please run build_webrtc.sh first"
     exit 1
 fi
@@ -222,7 +222,7 @@ EOF
 }
 
 # Build framework for macOS ARM64
-create_framework "mac" "arm64" "$WEBRTC_SRC/out/mac_arm64"
+create_framework "mac" "arm64" "$WEBRTC_SRC/out/Default"
 
 # Create XCFramework
 echo "Creating XCFramework..."

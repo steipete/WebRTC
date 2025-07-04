@@ -14,7 +14,13 @@ This document details all size optimizations applied to reduce the WebRTC binary
 - `-ffunction-sections` - Place each function in its own section
 - `-fdata-sections` - Place each data item in its own section
 - `-Wl,-dead_strip` - Remove unused code sections (macOS equivalent of --gc-sections)
-- **Expected savings**: 5-10%
+- `-Wl,-x` - Strip local symbols
+- `-Wl,-S` - Strip debug symbols
+- `-mcpu=apple-m1` - Apple Silicon specific optimizations (arm64)
+- `-fmodules -fcxx-modules` - Clang module support for faster builds
+- `-mmacosx-version-min=14.0` - Deployment target optimization
+- `-fobjc-arc` - Ensure ARC is enabled for Objective-C
+- **Expected savings**: 10-15%
 
 ### Symbol Stripping
 - `symbol_level=0` - No debug symbols
@@ -35,13 +41,26 @@ This document details all size optimizations applied to reduce the WebRTC binary
 - `rtc_build_tools=false` - Don't build tools
 - `rtc_disable_trace_events=true` - Disable trace events
 - `rtc_disable_metrics=true` - Disable metrics collection
-- **Expected savings**: 5-10MB
+- `rtc_enable_bwe_test_logging=false` - Disable bandwidth estimator logging
+- `rtc_exclude_transient_suppressor=true` - Remove audio transient suppressor
+- `rtc_enable_protobuf=false` - Disable protobuf (saves space if not using data channels)
+- `rtc_builtin_task_queue_impl=false` - Use system Grand Central Dispatch
+- **Expected savings**: 10-15MB
 
 ### Platform Features
 - `rtc_use_x11=false` - No X11 support (not needed on macOS)
 - `rtc_use_pipewire=false` - No PipeWire support
 - `rtc_use_gtk=false` - No GTK support
+- `rtc_include_internal_audio_device=false` - Use macOS native audio
 - **Expected savings**: 2-5MB
+
+### macOS-Specific Optimizations
+- `rtc_use_metal_rendering=true` - Use Metal for rendering
+- `rtc_use_videotoolbox=true` - Hardware video encoding/decoding
+- `rtc_use_accelerate_framework=true` - Use Accelerate.framework for SIMD operations
+- `enable_modules=true` - Clang module support
+- `rtc_include_dav1d_in_internal_decoder_factory=false` - Exclude alternative AV1 decoder
+- **Expected savings**: 5-10MB + significant performance improvements
 
 ## Codec Optimization
 

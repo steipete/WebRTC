@@ -569,17 +569,28 @@ This build includes aggressive size optimizations that reduce the binary from ~4
 - **Link-Time Optimization (LTO)**: Cross-module optimization and dead code elimination
 - **Size-optimized compilation**: `-Os` flag prioritizes size over speed
 - **Section-based linking**: Functions and data in separate sections for better stripping
-- **Symbol stripping**: All debug symbols removed
+- **Symbol stripping**: All debug symbols removed with `-Wl,-x` and `-Wl,-S`
+- **Apple Silicon optimization**: `-mcpu=apple-m1` for ARM64 performance
+- **Deployment target**: `-mmacosx-version-min=14.0` for modern macOS features
+- **Clang modules**: `-fmodules` for faster compilation
+- **ARC enabled**: `-fobjc-arc` for automatic reference counting
 
 ### Feature Reductions
 - **Audio codecs**: Only Opus (system) and G.711 enabled by default
 - **Legacy APIs**: Removed deprecated video quality observer and legacy modules
-- **Debug features**: Disabled metrics, trace events, and transient suppressor
+- **Debug features**: Disabled metrics, trace events, BWE logging, and transient suppressor
 - **Platform code**: Removed X11, PipeWire, GTK support
+- **Task queue**: Using system Grand Central Dispatch instead of built-in
+- **Protobuf**: Disabled (saves space if not using data channels)
+- **Alternative decoders**: Removed dav1d AV1 decoder
+- **Audio device**: Using macOS native audio instead of internal
 
-### System Libraries
+### System Libraries & Frameworks
 - **Opus**: Uses macOS system library (requires `brew install opus`)
 - **SSL**: Uses native macOS Security framework
+- **Metal**: Hardware-accelerated rendering
+- **VideoToolbox**: Hardware video encoding/decoding
+- **Accelerate.framework**: SIMD operations and DSP
 
 ### Further Size Reduction Options
 
