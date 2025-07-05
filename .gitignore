@@ -92,4 +92,5 @@ coverage/
 
 # Documentation build
 docs/_build/
-docs/.doctrees/
+docs/.doctrees//output/
+/temp/

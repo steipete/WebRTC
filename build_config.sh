@@ -43,10 +43,11 @@ export ENABLE_METRICS="${ENABLE_METRICS:-true}"        # Enable metrics collecti
 export ENABLE_TESTS="${ENABLE_TESTS:-false}"           # Build test binaries
 export ENABLE_EXAMPLES="${ENABLE_EXAMPLES:-false}"     # Build example programs
 export ENABLE_TOOLS="${ENABLE_TOOLS:-false}"           # Build WebRTC tools
-export USE_SYSTEM_SSL="${USE_SYSTEM_SSL:-true}"        # Use system SSL instead of BoringSSL
-export USE_SYSTEM_OPUS="${USE_SYSTEM_OPUS:-true}"      # Use system Opus (if available)
+export USE_SYSTEM_SSL="${USE_SYSTEM_SSL:-false}"        # Use BoringSSL to match WebRTC defaults
+export USE_SYSTEM_OPUS="${USE_SYSTEM_OPUS:-false}"      # Use bundled Opus for consistency
 
 # Build System Configuration
+export BUILD_STATIC="${BUILD_STATIC:-true}"            # Build as static library
 export PARALLEL_JOBS="${PARALLEL_JOBS:-}"              # Number of parallel build jobs (empty = auto)
 export CCACHE_ENABLED="${CCACHE_ENABLED:-false}"       # Use ccache for faster rebuilds
 

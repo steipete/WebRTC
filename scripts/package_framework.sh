@@ -59,7 +59,14 @@ create_framework() {
     echo "Creating framework library..."
     
     # Check for the main WebRTC library
-    webrtc_lib="$build_dir/obj/libwebrtc.a"
+    # Try different output directories
+    if [ -f "$build_dir/obj/libwebrtc.a" ]; then
+        webrtc_lib="$build_dir/obj/libwebrtc.a"
+    elif [ -f "$WEBRTC_SRC/out/mac_arm64/obj/libwebrtc.a" ]; then
+        webrtc_lib="$WEBRTC_SRC/out/mac_arm64/obj/libwebrtc.a"
+    else
+        webrtc_lib="$build_dir/obj/libwebrtc.a"
+    fi
     
     if [ ! -f "$webrtc_lib" ]; then
         echo "Error: WebRTC library not found at $webrtc_lib"
