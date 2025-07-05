@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "WebRTC",
     platforms: [
-        .macOS(.v14),
+        .macOS(.v12),
         .iOS(.v13)
     ],
     products: [
